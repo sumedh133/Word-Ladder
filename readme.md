@@ -6,7 +6,7 @@ Streamlit based Word ladder game which uses BFS with a tree size limit for effic
 use this command in terminal for streamlit installation:
 ```
 pip install requirements.txt
-'''
+```
 
 to run on localhost use:
 ```
