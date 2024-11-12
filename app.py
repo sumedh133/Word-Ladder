@@ -116,10 +116,9 @@ def main():
 
     else:
         if st.session_state.solutions:
-            # Display solutions if available
             st.write("Here are the possible solutions: ")
             for solution in st.session_state.solutions[:limit]:
-                st.markdown(" ➔ ".join(solution), unsafe_allow_html=True)
+                st.markdown(highlight_changes_in_ladder(solution), unsafe_allow_html=True)
 
 
 def validate_word(dictionary, word_input):
@@ -140,6 +139,32 @@ def find_closest_solutions(user_solution, solutions):
         if seq.ratio() > 0.7:  # Adjust the threshold as needed
             closest_solutions.append(solution)
     return closest_solutions
+
+
+def highlight_changes_in_ladder(ladder):
+    highlighted_ladder = []
+    
+    for i in range(len(ladder) - 1):
+        word1 = ladder[i]
+        word2 = ladder[i + 1]
+        
+        # Find the index of the changed letter
+        for j in range(len(word1)):
+            if word1[j] != word2[j]:
+                # Highlight the changed letter by wrapping it in a span tag
+                highlighted_word = (
+                    word1[:j] + 
+                    f'<span style="color: yellow; font-weight: bold;">{word1[j]}</span>' + 
+                    word1[j+1:]
+                )
+                highlighted_ladder.append(highlighted_word)
+                break
+        highlighted_ladder.append(" ➔ ")  # Add an arrow between words
+
+    # Add the last word without highlighting
+    highlighted_ladder.append(ladder[-1])
+    
+    return "".join(highlighted_ladder)
 
 
 if __name__ == "__main__":
