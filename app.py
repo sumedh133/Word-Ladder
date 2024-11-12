@@ -4,7 +4,7 @@ from solving.solver import Solver
 from words.dictionary import Dictionary
 from words.word import Word
 from time import perf_counter
-
+import difflib
 
 APP_NAME = "WordLadder"
 MINIMUM_WORD_LENGTH = 2
@@ -16,6 +16,7 @@ MAXIMUM_LADDER_LENGTH = 10
 def green(msg):
     return f'<span style="color: green;">{msg}</span>'
 
+
 def red(msg):
     return f'<span style="color: red;">{msg}</span>'
 
@@ -24,6 +25,8 @@ if "page_start" not in st.session_state:
     st.session_state.page_start = 0
 if "solutions" not in st.session_state:
     st.session_state.solutions = None
+if "user_solution" not in st.session_state:
+    st.session_state.user_solution = None
 
 
 def main():
@@ -88,51 +91,35 @@ def main():
             start = perf_counter()
             solutions = solver.solve(max_ladder_length)
             took = (perf_counter() - start) * 1000
-        st.session_state.solutions = solutions  
+        st.session_state.solutions = [[str(word) for word in solution.ladder] for solution in solutions]
 
         if len(solutions) == 0:
             st.markdown(red(f"Took {took:.2f}ms to find no solutions (explored {solver.explored_count} solutions)."), unsafe_allow_html=True)
         else:
             st.markdown(f"Took {green('%.2fms' % took)} to find {green(len(solutions))} solutions (explored {green(solver.explored_count)} solutions).", unsafe_allow_html=True)
 
-    
-    if st.session_state.solutions:
-        solutions = st.session_state.solutions
-
+        # Provide the user the option to submit their solution
+        user_solution_input = st.text_area("Enter your word ladder solution (comma separated):", "")
         
-        page_start = st.session_state.page_start
-        for solution in solutions[page_start: page_start + limit]:
-            
-            ladder_display = []
-            for i in range(len(solution)):
-                word = str(solution[i])  
+        submit_button = st.button("Submit Solution")
+        if submit_button and user_solution_input:
+            user_solution_list = [word.strip() for word in user_solution_input.split(",")]
+            st.session_state.user_solution = user_solution_list
 
-                if i == 0:
-                    
-                    ladder_display.append(word)
-                else:
-                    
-                    prev_word = str(solution[i - 1])
-                    highlighted_word = ""
-                    for j in range(len(word)):
-                        if word[j] == prev_word[j]:
-                            highlighted_word += word[j]  
-                        else:
-                            highlighted_word += f'<span style="color: green; font-weight: bold;">{word[j]}</span>'  
-                    ladder_display.append(highlighted_word)
+            if any([user_solution_list == solution for solution in st.session_state.solutions]):
+                st.success("Congratulations! Your solution is correct.")
+            else:
+                st.error("Your solution is incorrect. Here are the closest solutions:")
+                closest_solutions = find_closest_solutions(user_solution_list, st.session_state.solutions)
+                for solution in closest_solutions:
+                    st.markdown(" ➔ ".join(solution), unsafe_allow_html=True)
 
-            
-            st.markdown(" ➔ ".join(ladder_display), unsafe_allow_html=True)
-
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Previous"):
-                st.session_state.page_start = max(st.session_state.page_start - limit, 0)
-        with col2:
-            if st.button("Next"):
-                st.session_state.page_start = min(st.session_state.page_start + limit, len(solutions) - limit)
-
+    else:
+        if st.session_state.solutions:
+            # Display solutions if available
+            st.write("Here are the possible solutions: ")
+            for solution in st.session_state.solutions[:limit]:
+                st.markdown(" ➔ ".join(solution), unsafe_allow_html=True)
 
 
 def validate_word(dictionary, word_input):
@@ -144,6 +131,15 @@ def validate_word(dictionary, word_input):
     else:
         return word
     return None
+
+
+def find_closest_solutions(user_solution, solutions):
+    closest_solutions = []
+    for solution in solutions:
+        seq = difflib.SequenceMatcher(None, user_solution, solution)
+        if seq.ratio() > 0.7:  # Adjust the threshold as needed
+            closest_solutions.append(solution)
+    return closest_solutions
 
 
 if __name__ == "__main__":
