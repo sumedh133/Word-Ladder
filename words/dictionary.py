@@ -48,7 +48,6 @@ class Dictionary(object):
         return self.__words.get(word.upper())
 
     def get(self, word: str):
-        """Provides a 'get' method for word retrieval, mirroring dictionary get behavior."""
         return self.__getitem__(word)
 
 
