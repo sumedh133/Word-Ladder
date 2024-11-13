@@ -48,8 +48,7 @@ def main():
             value=8, step=1
         )
         limit = st.number_input("Solutions to display at once", min_value=1, max_value=10, value=5)
-
-    # Store the user inputs in session state
+    
     st.session_state["start_word_input"] = start_word_input
     st.session_state["end_word_input"] = end_word_input
 
@@ -62,7 +61,7 @@ def main():
             st.session_state['dictionary_load_time'] = perf_counter()
 
     if st.button("Solve") or st.session_state.button:
-        st.session_state.button=True
+        st.session_state.button = True
         if 'dictionary' not in st.session_state:
             st.markdown(red("⚠️ Please enter a valid start word length between 2 and 15 characters."), unsafe_allow_html=True)
             return
@@ -100,36 +99,32 @@ def main():
         if len(solutions) == 0:
             st.markdown(red(f"Took {took:.2f}ms to find no solutions (explored {solver.explored_count} solutions)."), unsafe_allow_html=True)
         else:
-            st.markdown(f"Took {green('%.2fms' % took)} to find {green(len(solutions))} solutions (explored {green(solver.explored_count)} solutions).", unsafe_allow_html=True)
+            # Limit the number of solutions displayed based on the 'limit' input from the settings
+            limited_solutions = st.session_state.solutions[:limit]
+            st.markdown(f"Took {green('%.2fms' % took)} to find {green(len(limited_solutions))} solutions (explored {green(solver.explored_count)} solutions).", unsafe_allow_html=True)
 
-        # Store user solution input in session state
+
         user_solution_input = st.text_area("Enter your word ladder solution (comma separated):", st.session_state.user_solution_input)
         st.session_state.user_solution_input = user_solution_input
         
-
         if st.button("Submit Solution"):
-            # Debug: Check if the user_solution_input has been populated
-            st.write(f"Button clicked! user_solution_input: '{st.session_state.user_solution_input}'")
             
             if st.session_state.user_solution_input:
-                # Clean the user input
                 user_solution_list = [word.strip().upper() for word in st.session_state.user_solution_input.split(",")]
-
-                # Debug: Print the cleaned user solution list
-                st.write(f"User's solution (cleaned): {user_solution_list}")
+                # st.write(f"User's solution (cleaned): {user_solution_list}")
 
                 st.session_state.user_solution = user_solution_list
 
-                # Check if the user's solution is correct
-                if any([user_solution_list == solution for solution in st.session_state.solutions]):
+                if any([user_solution_list == solution for solution in limited_solutions]):
                     st.success("Congratulations! Your solution is correct.")
                 else:
                     st.error("Your solution is incorrect. Here are the closest solutions:")
-                    closest_solutions = find_closest_solutions(user_solution_list, st.session_state.solutions)
+                    closest_solutions = find_closest_solutions(user_solution_list, limited_solutions)
                     for solution in closest_solutions:
                         st.markdown(" ➔ ".join(solution), unsafe_allow_html=True)
             else:
                 st.write("⚠️ Please enter a word ladder solution before submitting.")
+
 
 
 def validate_word(dictionary, word_input):
@@ -144,15 +139,15 @@ def validate_word(dictionary, word_input):
 
 
 def find_closest_solutions(user_solution, solutions):
-    # Calculate similarity ratio for each solution and store it in a list with the solution
+    
     solutions_with_ratio = [
         (solution, difflib.SequenceMatcher(None, user_solution, solution).ratio())
         for solution in solutions
     ]
-    # Sort solutions by ratio in descending order
+    
     solutions_with_ratio.sort(key=lambda x: x[1], reverse=True)
     
-    # Extract the sorted solutions
+    
     closest_solutions = [solution for solution, ratio in solutions_with_ratio]
     
     return closest_solutions
@@ -165,10 +160,10 @@ def highlight_changes_in_ladder(ladder):
         word1 = ladder[i]
         word2 = ladder[i + 1]
         
-        # Find the index of the changed letter
+        
         for j in range(len(word1)):
             if word1[j] != word2[j]:
-                # Highlight the changed letter by wrapping it in a span tag
+                
                 highlighted_word = (
                     word1[:j] + 
                     f'<span style="color: yellow; font-weight: bold;">{word1[j]}</span>' + 
@@ -176,9 +171,9 @@ def highlight_changes_in_ladder(ladder):
                 )
                 highlighted_ladder.append(highlighted_word)
                 break
-        highlighted_ladder.append(" ➔ ")  # Add an arrow between words
+        highlighted_ladder.append(" ➔ ")  
 
-    # Add the last word without highlighting
+    
     highlighted_ladder.append(ladder[-1])
     
     return "".join(highlighted_ladder)
